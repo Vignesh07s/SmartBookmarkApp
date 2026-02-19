@@ -16,9 +16,13 @@ interface Bookmark {
 
 interface BookmarkListProps {
   initialBookmarks: Bookmark[];
+  userId: string;
 }
 
-export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
+export default function BookmarkList({
+  initialBookmarks,
+  userId,
+}: BookmarkListProps) {
   // Normalize bookmarks for stable references
   const [bookmarksMap, setBookmarksMap] = useState<Record<string, Bookmark>>(
     () => {
@@ -30,7 +34,7 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Delete bookmark handler
   const handleDelete = useCallback(async (id: string) => {
@@ -64,16 +68,9 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
 
   // Supabase realtime subscription
   useEffect(() => {
-  let channel: any;
+    if (!userId) return;
 
-  const setupSubscription = async () => {
-    // 1. Get the current user to define userId for the filter
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return;
-
-    // 2. Initialize the channel with the user_id filter
-    channel = supabase
+    const channel = supabase
       .channel("realtime-bookmarks")
       .on(
         "postgres_changes",
@@ -81,7 +78,7 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
           event: "*",
           schema: "public",
           table: "bookmarks",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
@@ -90,7 +87,9 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
               [payload.new.id]: payload.new,
             }));
             toast.success("Bookmark added");
-          } else if (payload.eventType === "DELETE") {
+          }
+
+          if (payload.eventType === "DELETE") {
             setBookmarksMap((prev) => {
               const newMap = { ...prev };
               delete newMap[payload.old.id];
@@ -98,26 +97,14 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
             });
             toast.error("Bookmark deleted");
           }
-        }
+        },
       )
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-        if (status === "CHANNEL_ERROR") {
-          console.error("WebSocket failed. Check RLS or network.");
-        }
-      });
-  };
+      .subscribe();
 
-  setupSubscription();
-
-  return () => {
-    if (channel) {
+    return () => {
       supabase.removeChannel(channel);
-    }
-  };
-}, [supabase]);
+    };
+  }, [supabase, userId]);
 
   // Convert map to array & filter by debounced search
   const filteredBookmarks = useMemo(() => {
@@ -133,8 +120,17 @@ export default function BookmarkList({ initialBookmarks }: BookmarkListProps) {
       );
   }, [bookmarksMap, debouncedQuery]);
 
+  const bookmarkCount = filteredBookmarks.length;
+
   return (
     <div className="space-y-6 w-full max-w-2xl mx-auto">
+
+      <div className="flex items-center justify-between px-2">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+          Your Bookmarks ({bookmarkCount})
+        </h2>
+      </div>
+
       {/* Search Input */}
       <div className="relative group w-full">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">

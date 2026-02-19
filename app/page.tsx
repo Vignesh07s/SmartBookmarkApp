@@ -76,18 +76,28 @@ export default async function Home() {
       <main className="max-w-3xl mx-auto px-2 py-16">
         {!user ? (
           /* Landing State */
-          <div className="text-center py-24 bg-white rounded-4xl border border-slate-200 shadow-sm px-8">
-            <div className="w-24 h-24 bg-blue-50 rounded-4xl flex items-center justify-center mx-auto mb-8 rotate-3">
-              <span className="text-5xl">🔖</span>
+          /* Landing State */
+          /* Landing State */
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm px-6">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🔖</span>
             </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">
-              The smartest way to save the web.
-            </h2>
-            <p className="text-slate-500 mb-10 max-w-sm mx-auto leading-relaxed">
-              Auto-scraped titles, real-time syncing, and a clutter-free
-              experience for your bookmarks.
+
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
+              Save. Sync. Access.
+              <span className="text-blue-600"> Instantly.</span>
+            </h1>
+
+            <p className="text-slate-600 mb-6 max-w-sm mx-auto text-base">
+              A real-time bookmark manager with Google login and secure user
+              isolation.
             </p>
+
             <AuthButton />
+
+            <p className="text-xs text-slate-400 mt-5">
+              Google login • Real-time updates • Private by default
+            </p>
           </div>
         ) : (
           /* App State */
@@ -96,7 +106,7 @@ export default async function Home() {
               <div className="flex items-center justify-between mb-8 px-2">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Your Bookmarks ({bookmarks?.length || 0})
+                    Your Bookmarks
                   </h2>
                 </div>
 
@@ -104,7 +114,10 @@ export default async function Home() {
                 <AddBookmarkForm />
               </div>
 
-              <BookmarkList initialBookmarks={bookmarks || []} />
+              <BookmarkList
+                initialBookmarks={bookmarks || []}
+                userId={user.id}
+              />
             </section>
           </div>
         )}

@@ -26,7 +26,7 @@ A real-time web application built using Next.js, Tailwind CSS, and Supabase to m
 
 **Problem**: Relying only on real-time WebSockets was risky because the connection can easily drop due to poor network or a browser tab going to sleep. When the socket fails, the UI becomes a "zombie," meaning it won't show any new bookmarks or changes made from other devices.
 
-**Solution**: I implemented a Hybrid Sync architecture. While Supabase Realtime handles instant updates, I added Next.js revalidatePath inside my Server Actions as a backup. This force-pushes the latest database state through a standard HTTP stream. Even if the WebSocket connection is lost, the UI stays accurate and synchronized by pulling the data directly from the server.
+**Solution**: I implemented a Hybrid Sync architecture. While Supabase Realtime handles instant updates, I invalidated the route cache using revalidatePath so the next server render fetches fresh data directly from the database. Even if the WebSocket connection is lost, the UI stays accurate and synchronized by pulling the data directly from the server.
 
 ### 2. State-Prop Mismatch after Server Revalidation
 
@@ -45,6 +45,20 @@ A real-time web application built using Next.js, Tailwind CSS, and Supabase to m
 **Problem**: Even after using a Map and React.memo, adding a new bookmark was still triggering a full list re-render. Every existing row was being re-drawn in the DOM the moment a new one was inserted.
 
 **Solution**: To fix this, I used a sort inside useMemo to keep the list in a "Newest First" order. Because Maps don't have a fixed order, adding a new item triggers the full list re-render. By forcing an order, existing bookmarks stay in their exact same spots when a new one is added at the top. This allows React.memo to see that the old rows haven't actually changed, so it skips re-rendering them.
+
+### 5.Ensuring User-Level Data Isolation (RLS)
+
+**Problem**: In a multi-user application, it is critical that users can only access their own data.
+
+**Solution**: I enabled Row Level Security (RLS) in Supabase and created policies that restrict access based on the authenticated user's auth.uid(). This ensures:
+
+1. Users can only insert their own bookmarks
+
+2. Users can only query their own bookmarks
+
+3. Users cannot delete or modify others’ data
+
+This provides database-level security, not just frontend filtering.
 
 ## Setup Instructions
 
@@ -78,4 +92,4 @@ A real-time web application built using Next.js, Tailwind CSS, and Supabase to m
 
 ## Deployment
 
-This app is deployed on vercel. You can view it live at: []()
+This app is deployed on vercel. You can view it live at: [https://smart-bookmark-app-psi-khaki.vercel.app](https://smart-bookmark-app-psi-khaki.vercel.app)
